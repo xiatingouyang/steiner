@@ -1,13 +1,20 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+typedef struct edgee
+{
+	int v1, v2;
+	int w;
+} edge;
+
+
 /*
 The individual element in the adjacency list consisting of the following:
 
 */
 typedef struct neighborr{
 	int v; // vertex label, a value from 1 - V
-	int w; // edge weight
+	edge* e;
 	struct neighborr *next; // pointer to the next neighbor element
 }neighbor;
 
@@ -21,6 +28,8 @@ typedef struct gg{
 	int V;  // total num of v
 	int E;  // total num of e
 	int T;  // total num of terminals
+	int *d; // the array of degrees. d[i] denotes the degree of vertex i (index starting from 1)
+	edge * edges;
 	neighbor **list; // the adjacency list
 
 	// 	   list (ptr)
@@ -33,26 +42,41 @@ typedef struct gg{
 	//      ..
 	//      neighbor-V1 (v, w) -> neighbor-d2 -> ....  -> neighbor-d1 -> NULL
 
-	int *d; // the array of degrees. d[i] denotes the degree of vertex i (index starting from 1)
 	int *t; // the array of terminals. (index starting from 0)
-}graph;
+} graph;
 
 
 // used to update the edges and the degree
-void add(graph *g, int v, int v1, int w){
-	neighbor* n = (neighbor *)malloc(sizeof(neighbor));
-	g -> d[v] ++;
+void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
+	neighbor* ngh;
+	
+	g -> edges[eIndex].v1 = vertex1;
+	g -> edges[eIndex].v2 = vertex2;
+	g -> edges[eIndex].w = weight;
 
-	n -> v = v1;
-	n -> w = w;
-	if(g -> list[v] == NULL){
-		n -> next = NULL;
-		g -> list[v] = n;
-		return;
+	g -> d[vertex1] ++;
+	ngh = (neighbor *)malloc(sizeof(neighbor));
+	ngh -> v = vertex2;
+	ngh -> e = &(g -> edges[eIndex]);
+	if(g -> list[vertex1] == NULL){
+		ngh -> next = NULL;
+		g -> list[vertex1] = ngh;
+	} else {
+		ngh -> next = g -> list[vertex1];
+		g -> list[vertex1] = ngh;
 	}
-	n -> next = g -> list[v];
-	g -> list[v] = n;
 
+	g -> d[vertex2] ++;
+	ngh = (neighbor *)malloc(sizeof(neighbor));
+	ngh -> v = vertex1;
+	ngh -> e = &(g -> edges[eIndex]);
+	if(g -> list[vertex2] == NULL){
+		ngh -> next = NULL;
+		g -> list[vertex2] = ngh;
+	} else {
+		ngh -> next = g -> list[vertex2];
+		g -> list[vertex2] = ngh;
+	}
 }
 
 
@@ -63,7 +87,7 @@ void tranverse(graph *g){
 		printf("%d[%d]: ", i, g->d[i]);
 		neighbor * ptr = g -> list[i];
 		while (ptr != NULL){
-			printf("(%d, %d) ", ptr -> v, ptr->w);
+			printf("(%d, %d) ", ptr -> v, ptr->e->w);
 			ptr = ptr -> next;
 		}
 		printf("\n");
@@ -77,35 +101,29 @@ void tranverse(graph *g){
 }
 
 void readInput(graph *g){
-	int v;
-	int e;
-	int t;
-	int v1, v2;
-	int w;
-	int tt;
+	int v,e,t,v1,v2,w,tt;
 
 	// read the vertices and edges
 	scanf("SECTION Graph\nNodes %d\nEdges %d\n", &v, &e);
 	g -> V = v;
 	g -> E = e;
-	g -> list = (neighbor**)malloc((v+1) * sizeof(neighbor*)); 
 	g -> d = (int*) malloc((v+1) * sizeof(int));
+	g -> edges = (edge *)malloc(e * sizeof(edge));
+	g -> list = (neighbor**)malloc((v+1) * sizeof(neighbor*)); 
 
 	for(int i = 0; i < e; i++){
 		scanf("E %d %d %d\n", &v1, &v2, &w);
-		add(g, v2, v1, w);
-		add(g, v1, v2, w);
+		add(g, i, v1, v2, w);
 	}
 
 	// read the terminals
 	scanf("END\nSECTION Terminals\nTerminals %d\n", &t);
 	g -> T = t;
-	g -> t = (int*) malloc((t+5) * sizeof(int));
-	int num = 0;
+	g -> t = (int*) malloc(t * sizeof(int));
 	
 	for(int i = 0; i < t; i++){
 		scanf("T %d\n", &tt);
-		g -> t[num++] = tt;
+		g -> t[i] = tt;
 	}
 }
 
