@@ -1,31 +1,34 @@
 #include<stdio.h>
 #include<stdlib.h>
 
+/*
+information about an edge
+*/
 typedef struct edgee
 {
-	int v1, v2;
-	int w;
+	int v1, v2;	// the two vertices connected by the edge
+	int w;		// weight
 	int choose;	// 1 -- included in solution;	0 -- not included in solution
 } edge;
 
 
 /*
-The individual element in the adjacency list consisting of the following:
-
+all the neighbors of a certain vertex
 */
 typedef struct neighborr{
-	int v; // vertex label, a value from 1 - V
-	edge* e;
+	int v; 					// vertex label, a value from 1 - V
+	edge* e;				// edge
 	struct neighborr *next; // pointer to the next neighbor element
 } neighbor;
 
-
+/*
+information about a vertex
+*/
 typedef struct nodee
 {
-	int d;	// degree
-	int choose;	// 1 -- included in solution;	0 -- not included in solution
-	neighbor* nghList;// the adjacency list
-	//      neighbor-11 (v, w) -> neighbor-12 -> ....  -> neighbor-d1 -> NULL
+	int d;				// degree
+	int choose;			// 1 -- included in solution;	0 -- not included in solution
+	neighbor* nghList;	// the adjacency list: neighbor1 (v, e) -> neighbor2 (v, e) -> ....  -> neighbor-d (v,e) -> NULL
 } node;
 
 
@@ -38,13 +41,13 @@ typedef struct gg{
 	int V;  // total num of v
 	int E;  // total num of e
 	int T;  // total num of terminals
-	edge ** edges;
-	node* nodeList;
+	edge ** edges;	// all edges  (index starting from 0)
+	node* nodeList;	// all vertices (index starting from 1)
 	int *t; // the array of terminals. (index starting from 0)
 } graph;
 
 
-// used to update the edges and the degree
+// used for input
 void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
 	neighbor* ngh;
 	
@@ -146,7 +149,7 @@ void outputResult(graph *g) {
 	}
 }
 
-
+// a test method to compute a spanning tree
 int testST(graph *g) {
 	int finish = 0;
 	g->edges[0]->choose = 1;
