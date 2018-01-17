@@ -1,0 +1,18 @@
+SECTION Graph
+Nodes 5
+Edges 6
+E 1 2 1
+E 1 4 3
+E 3 2 3
+E 2 4 4
+E 3 5 10
+E 4 5 1
+END
+
+SECTION Terminals
+Terminals 2
+T 2
+T 4
+END
+
+EOF
