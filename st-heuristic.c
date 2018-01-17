@@ -81,7 +81,7 @@ void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
 
 
 // report the specs of the graph (V, E, degree for each v, all neighbors of a v, the terminals)
-void tranverse(graph *g){
+void report(graph *g){
 	printf("The graph has %d vertices and %d edges.\n", g -> V, g -> E);
 	for(int i = 1; i <= g -> V; i++){
 		printf("%d[%d]: ", i, g->d[i]);
@@ -131,6 +131,6 @@ void readInput(graph *g){
 int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
 	readInput(g);
-	tranverse(g);
+	report(g);
 	return 0;
 }
