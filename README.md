@@ -1,6 +1,6 @@
 # Steiner Tree Heuristics (for submission to PACE 2018)
 
-The source code is written in `st-steiner.c`. The sample input available on the website is copied in `heuristic/input.gr`. To run the program on the sample input, execute ```./run```. The original input is available [here]
+The source code is written in `st-steiner.c`. The sample input available on the website is copied in `heuristic/input.gr`. To run the program on the sample input, execute ```./run.sh```. The original input is available [here]
 
 ## Heuristics 1:
 * reduce all the non-terminals with degree 2 (if a terminal has degree 2, then reduce its non-terminal neighbors so that they are of degree at least three. Update the new weights accordingly.)
