@@ -11,6 +11,9 @@ The source code is written in `st-steiner.c`. The sample input available on the 
 
 Good luck.
 
+Edit:
 
+Here is a [paper] on possible reductions.
 
 [here]: http://www.lamsade.dauphine.fr/~sikora/pace18/heuristic.zip
+[paper]: https://opus4.kobv.de/opus4-zib/files/252/SC-96-42.pdf
