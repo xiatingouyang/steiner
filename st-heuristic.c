@@ -33,6 +33,7 @@ information about a vertex
 typedef struct nodee
 {
 	int d;				// degree
+	int father;			// father node index (for Kruskal algorithm)
 	int choose;			// 1 -- included in solution;	0 -- not included in solution, -1 deleted from the graph
 	int isTerminal;		// 1 -- is a terminal vertex,   0 -- isn't a terminal
 	neighbor* nghList;	// the adjacency list(doubly linked list): neighbor1 (v, e) <-> neighbor2 (v, e) <-> ....  <-> neighbor-d (v,e) -> NULL
@@ -194,7 +195,7 @@ void report(graph *g){
 			printf("null edge\n");
 			continue;
 		}
-		printf("edge %d connecting vertex <%d, %d>\n", i, g -> edges[i] -> e1 -> v, g -> edges[i] -> e2 -> v);
+		printf("edge %d connecting vertex <%d, %d> with weight %d\n", i, g -> edges[i] -> v1, g -> edges[i] -> v2, g -> edges[i]-> w);
 	}
 
 	printf("-----\n");
@@ -217,7 +218,6 @@ void reduceEdge(graph * g){
 	}
 	while(st < ed){
 		int cur = queue[st], i;
-		//report(g);
 		st++;
 		i = g -> nodeList[cur].nghList -> v;
 
@@ -231,9 +231,8 @@ void reduceEdge(graph * g){
 		}
 	}
 
-    printf("total deleted: %d\n", st);
+    //printf("total deleted: %d\n", st);
 }
-
 
 
 
@@ -270,7 +269,7 @@ void readInput(graph *g){
 		g -> t[i] = tt;
 	}
 
-	reduceEdge(g);
+	//reduceEdge(g);
 
 
 }
@@ -286,6 +285,55 @@ void outputResult(graph *g) {
 	for (int i=0; i<g->E; i++) {
 		if (g->edges[i]->choose==1) {
 			printf("%d %d\n", g->edges[i]->v1, g->edges[i]->v2);
+		}
+	}
+}
+
+
+int cmpfunc (const void * a, const void * b) {
+	return ( (*(edge**)a)->w - (*(edge**)b)->w );
+}
+
+
+/* sort edges according to edge weight (small to large) */
+void sortEdges(graph *g) {
+	qsort(g->edges, g->E, sizeof(edge*), cmpfunc);
+}
+
+
+int getFather(graph *g, int nodeIndex) {
+	int f1, f2;
+	f1 = g->nodeList[nodeIndex].father;
+	if (f1==nodeIndex) {
+		return nodeIndex;
+	} else {
+		f2 = getFather(g, f1);
+		g->nodeList[nodeIndex].father = f2;
+		return f2;
+	}
+
+}
+
+
+void kruskal(graph *g) {
+	int i, f1, f2;
+
+	sortEdges(g);
+
+	// initialize nodes, the father for each node is itself at the beginning
+	for (i=1; i<=g->V; i++) {
+		g->nodeList[i].father = i;
+	}
+
+	// enumerate all edges
+	for (i=0; i<g->E; i++) {
+		f1 = getFather(g, g->nodeList[g->edges[i]->v1].father);
+		f2 = getFather(g, g->nodeList[g->edges[i]->v2].father);
+		if (f1!=f2) {
+			g->nodeList[g->edges[i]->v1].choose = 1;
+			g->nodeList[g->edges[i]->v2].choose = 1;
+			g->edges[i]->choose = 1;
+			g->nodeList[f1].father = f2;
 		}
 	}
 }
@@ -309,7 +357,6 @@ int testST(graph *g) {
 			}
 		}
 	}
-	outputResult(g);
 }
 
 void testDelete(graph * g){
@@ -319,9 +366,9 @@ void testDelete(graph * g){
 int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
 	readInput(g);
-	report(g);
-	testST(g);
-	testDelete(g);
-	report(g);
+	//report(g);
+	kruskal(g);
+	//testST(g);
+	outputResult(g);
 	return 0;
 }
