@@ -265,7 +265,7 @@ void readInput(graph *g){
 
 	for(int i = 0; i < t; i++){
 		scanf("T %d\n", &tt);
-		g -> nodeList[i].isTerminal = 1;
+		g -> nodeList[tt].isTerminal = 1;
 		g -> t[i] = tt;
 	}
 
