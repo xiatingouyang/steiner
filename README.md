@@ -15,5 +15,9 @@ Edit:
 
 Here is a [paper] on the possible reductions.
 
+Here's an earlier steiner tree competition [stp].
+
+[stp]:http://dimacs11.zib.de/downloads.html
+
 [here]: http://www.lamsade.dauphine.fr/~sikora/pace18/heuristic.zip
 [paper]: https://opus4.kobv.de/opus4-zib/files/252/SC-96-42.pdf
