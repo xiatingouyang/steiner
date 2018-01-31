@@ -14,6 +14,7 @@ typedef struct edgee
 	int choose;	// 1 -- included in solution;	0 -- not included in solution； -1 temporarly deleted from the graph
 	struct neighborr* e1;
 	struct neighborr* e2; // pointer to the specify edge of the two adjacency list of the two neighbor;
+	struct edge * chr; // new edge to replace the original edge
 } edge;
 
 
@@ -43,7 +44,6 @@ typedef struct nodee
 
 /*
 The graph structure
-
 */
 typedef struct gg{
 
@@ -53,7 +53,111 @@ typedef struct gg{
 	edge ** edges;	// all edges  (index starting from 0)
 	node* nodeList;	// all vertices (index starting from 1)
 	int *t; // the array of terminals. (index starting from 0)
+	int cur_v_num; // after reduction, the current number of nodes
+	int cur_e_num; // after reduction, the current number of edges
 } graph;
+
+typedef struct edge_list{
+    edge * parent;
+    neighbor * edge_list;
+} chr_edges;
+
+
+
+
+int main(){
+	graph *g = (graph *)malloc(sizeof(graph));
+	readInput(g);
+	//report(g);
+	kruskal(g);
+	//testST(g);
+	outputResult(g);
+	return 0;
+}
+
+
+void readInput(graph *g){
+	int v,e,t,v1,v2,w,tt;
+
+	// read the vertices and edges
+	scanf("SECTION Graph\nNodes %d\nEdges %d\n", &v, &e);
+	g -> V = v;
+    g -> cur_v_num = v;
+	g -> E = e;
+    g -> cur_e_num = e;
+	g -> edges = (edge**)malloc(e * sizeof(edge*));
+	g -> nodeList = (node*)malloc((v+1) * sizeof(node));
+	for (int i=1; i<=v; i++) {
+		g -> nodeList[i].d = 0;
+		g -> nodeList[i].choose = 0;
+		g -> nodeList[i].isTerminal = 0;
+		g -> nodeList[i].nghList = NULL;
+	}
+
+	for(int i = 0; i < e; i++){
+		scanf("E %d %d %d\n", &v1, &v2, &w);
+		add(g, i, v1, v2, w);
+
+	}
+
+	// read the terminals
+	scanf("END\nSECTION Terminals\nTerminals %d\n", &t);
+	g -> T = t;
+	g -> t = (int*) malloc(t * sizeof(int));
+
+	for(int i = 0; i < t; i++){
+		scanf("T %d\n", &tt);
+		g -> nodeList[tt].isTerminal = 1;
+		g -> t[i] = tt;
+	}
+
+	//reduce(g);
+
+}
+
+
+// used for input
+void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
+	neighbor* ngh;
+
+
+	// add the edge to the graph
+	g -> edges[eIndex] = (edge*)malloc(sizeof(edge));
+	g -> edges[eIndex]->v1 = vertex1;
+	g -> edges[eIndex]->v2 = vertex2;
+	g -> edges[eIndex]->w = weight;
+	g -> edges[eIndex]->choose = 0;
+	g -> edges[eIndex]->chr = null;
+
+
+	// add the edge to the adjancency list of the two vertex
+	g -> edges[eIndex] -> e1 = addEdge(g, eIndex, vertex1, vertex2);
+	g -> edges[eIndex] -> e2 = addEdge(g, eIndex, vertex2, vertex1);
+
+	/*g -> nodeList[vertex1].d ++;
+	ngh = (neighbor *)malloc(sizeof(neighbor));
+	ngh -> v = vertex2;
+	ngh -> e = g -> edges[eIndex];
+	if(g -> nodeList[vertex1].nghList == NULL){
+		ngh -> next = NULL;
+		g -> nodeList[vertex1].nghList = ngh;
+	} else {
+		ngh -> next = g -> nodeList[vertex1].nghList;
+		g -> nodeList[vertex1].nghList= ngh;
+	}
+	g -> nodeList[vertex2].d ++;
+	ngh = (neighbor *)malloc(sizeof(neighbor));
+	ngh -> v = vertex1;
+	ngh -> e = g -> edges[eIndex];
+	if(g -> nodeList[vertex2].nghList == NULL){
+		ngh -> next = NULL;
+		g -> nodeList[vertex2].nghList = ngh;
+	} else {
+		ngh -> next = g -> nodeList[vertex2].nghList;
+		g -> nodeList[vertex2].nghList = ngh;
+	}*/
+}
+
 
 // add an edge into vertex1's adjacency list which connects vertex2.
 neighbor * addEdge(graph *g, int eIndex, int vertex1, int vertex2){
@@ -77,48 +181,45 @@ neighbor * addEdge(graph *g, int eIndex, int vertex1, int vertex2){
 }
 
 
-// used for input
-void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
-	neighbor* ngh;
+//do optimization by reducing some nodes with degree 1 and 2
 
-
-	// add the edge to the graph
-	g -> edges[eIndex] = (edge*)malloc(sizeof(edge));
-	g -> edges[eIndex]->v1 = vertex1;
-	g -> edges[eIndex]->v2 = vertex2;
-	g -> edges[eIndex]->w = weight;
-	g -> edges[eIndex]->choose = 0;
-
-
-	// add the edge to the adjancency list of the two vertex
-	g -> edges[eIndex] -> e1 = addEdge(g, eIndex, vertex1, vertex2);
-	g -> edges[eIndex] -> e2 = addEdge(g, eIndex, vertex2, vertex1);
-
-	/*g -> nodeList[vertex1].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex2;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex1].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex1].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex1].nghList;
-		g -> nodeList[vertex1].nghList= ngh;
-	}
-
-	g -> nodeList[vertex2].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex1;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex2].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex2].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex2].nghList;
-		g -> nodeList[vertex2].nghList = ngh;
-	}*/
+void reduce(graph * g){
+    reduce_d1(graph * g);
+    reduce_d2(graph * g);
 }
 
+
+void reduce_d1(graph * g){
+    int queue_d1[g -> V + 10];
+    int beg = 0, end = 0;
+
+    //add all nodes with degree 1 into the queue
+    for(int i = 1; i <= g -> V; i++)
+        if(g->nodeList[i].d == 1)
+            queue_d1[end++]=1;
+
+    //deal with nodes with degree 1 one by one
+    int cur, ngh_node;
+    while(beg < end){
+        cur = queue_d1[beg++];
+        ngh_node = g -> nodeList[cur].nghList -> v;
+
+        // choose terminal, deleter non-terminal
+        if(g -> nodeList[i].isTerminal)
+            chooseNode_(g, cur, nodeList[cur].nghList -> e);
+        else
+            deleteNode(g, cur);
+
+        if(g -> nodeList[i].d == 1)
+            queue[end++] = 1;
+    }
+
+}
+
+void chooseNode(graph * g, int n, edge * e){
+    g -> nodeList[n].choose = 1;
+    e -> choose = 1;
+}
 
 // delete the specify node and all the edges connected with this node. (also will delete the specified node in the adjacency list)
 
@@ -130,6 +231,8 @@ void deleteNode(graph * g, int n){
 	while(ngh != NULL){
 		int num = ngh -> v;
 		edge* e = ngh -> e;
+
+        g -> nodeList[num].d--; // add from reduceEdge
 		e -> choose = -1;
 		//printf("%d e1:%d e2:%d\n", num, e -> e1 -> v, e -> e2 -> v);
 		neighbor* other = e -> e1;
@@ -149,7 +252,7 @@ void deleteNode(graph * g, int n){
 				other -> next -> pre = other -> pre;
 			}
 		}
-		
+
 		ngh = ngh -> next;
 	}
 
@@ -170,6 +273,78 @@ void deleteNode(graph * g, int n){
         	g -> edges[i] = g -> edges[--(g -> E)];
         }
     }
+
+}
+
+
+void reduce_d2(graph * g){
+    int queue_d2[g -> V + 10];
+    int beg = 0, end = 0;
+
+    //add all nodes with degree 1 into the queue
+    for(int i = 1; i <= g -> V; i++)
+        if( g -> nodeList[i].d == 2)
+            queue_d2[end++] = i;
+
+    //deal with nodes with degree 1 one by one
+    int cur, ngh1, ngh2, w1, w2;
+    edge * e1 = null, e2 = null;
+    while(beg < end){
+        cur = queue_d2[beg++];
+        ngh1 = g -> nodeList[cur].nghList -> v;
+        ngh2 = g -> nodeList[cur].nghList -> next -> v;
+        e1 = nodeList[cur].nghList -> e;
+        e2 = nodeList[cur].nghList -> next -> e;
+        int w1 = e1 -> w;
+        int w2 = e2 -> w;
+
+        if(!g -> nodeList[cur].isTerminal && !g -> nodeList[ngh1].isTerminal && !nodeList[ngh2].isTerminal)
+            nodeList[cur].choose = -1;
+
+        else if(g -> nodeList[cur].isTerminal){
+            if(w1 <= w2 && nodeList[ngh1].isTerminal){
+               g -> nodeList[cur].choose = 1;
+               g -> nodeList[ngh1].nghList -> e -> choose = 1;
+               g -> nodeList[ngh2].nghList -> e -> choose = -1;
+            }
+            if(w1 >= w2 && nodeList[ngh2].isTerminal){
+               g -> nodeList[cur].choose = 1;
+               g -> nodeList[ngh1].nghList -> e -> choose = -1;
+               g -> nodeList[ngh2].nghList -> e -> choose = 1;
+            }
+
+        else if(!g -> nodeList[cur].isTerminal){
+            g -> nodeList[cur].choose = -1;
+            g -> nodeList[ngh1].nghList -> e -> choose = -1;
+            g -> nodeList[ngh2].nghList -> e -> choose = -1;
+            replace_edge(g, ngh1, ngh2, w1 + w2, e1, e2);
+            }
+        }
+    }
+
+
+}
+
+replace_edge(graph * g, int v1, int v2, int w, edge * e1, edge * e2){
+    int eIndex = g -> cur_edg;
+    neighbor* ngh;
+
+
+	// add the edge to the graph
+	g -> edges[eIndex] = (edge*)malloc(sizeof(edge));
+	g -> edges[eIndex]->v1 = v1;
+	g -> edges[eIndex]->v2 = v2;
+	g -> edges[eIndex]->w = w;
+	g -> edges[eIndex]->choose = 0;
+	g -> edges[eIndex] -> cur_v_num++;
+	g -> edges[eIndex] -> cur_e_num--;
+	chr_edges * chr = (chr_edges *)malloc(sizeof(chr_edges));
+    g -> edges[eIndex]->chr = chr;
+
+
+	// add the edge to the adjancency list of the two vertex
+	g -> edges[eIndex] -> e1 = addEdge(g, eIndex, vertex1, vertex2);
+	g -> edges[eIndex] -> e2 = addEdge(g, eIndex, vertex2, vertex1);
 
 }
 
@@ -207,72 +382,9 @@ void report(graph *g){
 
 }
 
-void reduceEdge(graph * g){
-	int queue[g -> V + 10];
-	int st = 0, ed = 0;
-	for(int i = 1; i <= g -> V; i++){
-		if(g -> nodeList[i].d == 1 && !g -> nodeList[i].isTerminal){
-			queue[ed] = i;
-			ed++;
-		}
-	}
-	while(st < ed){
-		int cur = queue[st], i;
-		st++;
-		i = g -> nodeList[cur].nghList -> v;
-
-
-		deleteNode(g, cur);
-		g -> nodeList[cur].d--;
-		g -> nodeList[i].d--;
-		if(g -> nodeList[i].d == 1 && !g -> nodeList[i].isTerminal){
-			queue[ed] = i;
-			ed++;
-		}
-	}
-
-    //printf("total deleted: %d\n", st);
-}
 
 
 
-void readInput(graph *g){
-	int v,e,t,v1,v2,w,tt;
-
-	// read the vertices and edges
-	scanf("SECTION Graph\nNodes %d\nEdges %d\n", &v, &e);
-	g -> V = v;
-	g -> E = e;
-	g -> edges = (edge**)malloc(e * sizeof(edge*));
-	g -> nodeList = (node*)malloc((v+1) * sizeof(node));
-	for (int i=1; i<=v; i++) {
-		g -> nodeList[i].d = 0;
-		g -> nodeList[i].choose = 0;
-		g -> nodeList[i].isTerminal = 0;
-		g -> nodeList[i].nghList = NULL;
-	}
-
-	for(int i = 0; i < e; i++){
-		scanf("E %d %d %d\n", &v1, &v2, &w);
-		add(g, i, v1, v2, w);
-
-	}
-
-	// read the terminals
-	scanf("END\nSECTION Terminals\nTerminals %d\n", &t);
-	g -> T = t;
-	g -> t = (int*) malloc(t * sizeof(int));
-
-	for(int i = 0; i < t; i++){
-		scanf("T %d\n", &tt);
-		g -> nodeList[tt].isTerminal = 1;
-		g -> t[i] = tt;
-	}
-
-	//reduceEdge(g);
-
-
-}
 
 void outputResult(graph *g) {
 	long long value = 0;
@@ -361,14 +473,4 @@ int testST(graph *g) {
 
 void testDelete(graph * g){
 	deleteNode(g, 2);
-}
-
-int main(){
-	graph *g = (graph *)malloc(sizeof(graph));
-	readInput(g);
-	//report(g);
-	kruskal(g);
-	//testST(g);
-	outputResult(g);
-	return 0;
 }
