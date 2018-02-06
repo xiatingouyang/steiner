@@ -366,7 +366,7 @@ void testDelete(graph * g){
 int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
 	readInput(g);
-	//report(g);
+	report(g);
 	kruskal(g);
 	//testST(g);
 	outputResult(g);
