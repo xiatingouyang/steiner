@@ -208,7 +208,7 @@ void report(graph *g){
 }
 
 void reduceEdge(graph * g){
-	int queue[g -> V + 10];
+	int* queue = (int*)malloc(sizeof(int) *(g -> V + 10));
 	int st = 0, ed = 0;
 	for(int i = 1; i <= g -> V; i++){
 		if(g -> nodeList[i].d == 1 && !g -> nodeList[i].isTerminal){

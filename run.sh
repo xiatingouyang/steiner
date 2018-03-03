@@ -1,4 +1,4 @@
 gcc st-heuristic.c -o st
-./st < heuristic/instance039.gr
+./st < heuristic/input2.gr
 
 
