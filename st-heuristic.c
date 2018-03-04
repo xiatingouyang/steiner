@@ -34,6 +34,7 @@ typedef struct nodee
 	int d;				// degree
 	int father;			// father node index (for Kruskal algorithm)
 	int heapPos; 		// the reference to its position in heap
+	int prevNode;
 	int minDistance;	// the minimum distance from this node to a source (will specify in program)
 	int choose;			// 1 -- included in solution;	0 -- not included in solution, -1 deleted from the graph
 	int isTerminal;		// 1 -- is a terminal vertex,   0 -- isn't a terminal
@@ -359,6 +360,7 @@ void dijkstra(graph *g, int source){
 		heap[i].v = i + 1;
 		heap[i].n = g -> nodeList[i+1];
 		g -> nodeList[i+1].heapPos = i;
+		g -> nodeList[i+1].prevNode = -1;
 		if (i+1 == source) heap[i].d = 0;
 		else heap[i].d = INT_MAX;
 	}
@@ -369,6 +371,7 @@ void dijkstra(graph *g, int source){
 	}
 
 	while (size){
+
 		int v_min = heap[0].v;
 		int d = heap[0].d;
 		neighbor* ptr = g -> nodeList[v_min].nghList;
@@ -380,8 +383,10 @@ void dijkstra(graph *g, int source){
 			int u = ptr -> v;
 			int w = ptr -> e -> w;
 			int index = g -> nodeList[u].heapPos;
+			printf("%d < %d\n", index, size);
 			if (heap[index].d > w + d ){
 				//printf("<%d-%d>\n", v_min, u);
+				g -> nodeList[u].prevNode = v_min;
 				heap[index].d = w + d;
 				goup(g, heap, index);
 			}
@@ -391,7 +396,13 @@ void dijkstra(graph *g, int source){
 	}
 
 	for(i = 0; i < n; i++){
-		printf("%d %d\n", heap[i].v, heap[i].d);
+		printf("%d %d: ", heap[i].v, heap[i].d);
+		int prevNode = heap[i].v;
+		while(prevNode != -1){
+			printf("%d-", prevNode);
+			prevNode = g -> nodeList[prevNode].prevNode;
+		}
+		printf("\n");
 	}
 	
 }
