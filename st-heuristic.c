@@ -37,6 +37,7 @@ typedef struct nodee
 	int minDistance;	// the minimum distance from this node to a source (will specify in program)
 	int choose;			// 1 -- included in solution;	0 -- not included in solution, -1 deleted from the graph
 	int isTerminal;		// 1 -- is a terminal vertex,   0 -- isn't a terminal
+	int needOp;			// used in greedy1():  1 -- need to be update using dijkstra;  0 -- not included in dijkstra update;
 	neighbor* nghList;	// the adjacency list(doubly linked list): neighbor1 (v, e) <-> neighbor2 (v, e) <-> ....  <-> neighbor-d (v,e) -> NULL
 
 } node;
@@ -423,7 +424,7 @@ void kruskal(graph *g) {
 
 
 long long calcMaxDist(graph *g) {
-	long long maxDist = 0;
+	long long maxDist = 1;
 	for (int i=0; i<g->E; i++) {
 		maxDist += g->edges[i]->w;
 	}
@@ -485,15 +486,14 @@ void greedy1(graph* g) {
 
 	long long** dist;
 	pathNode*** path;	// the shortest path between i and j (exclude i and j)
-	long long maxDist, tempMin;
+	long long maxDist, tempMin, tempMax, distRange;
 	int tempT1, tempT2;
 	pathNode* pn1;
 	edge* e0;
 
-	maxDist = calcMaxDist(g);
 
-	for (int k=1; k<g->T; k++) {
-		// initialize two dimentional arrays dist and path
+	// initialize two dimentional arrays dist and path
+	void initDistAndPath() {
 		dist = (long long**) malloc(sizeof(long long*)*(g->V+1));
 		for (int i=1; i<=g->V; i++) {
 			dist[i] = (long long*) malloc(sizeof(long long)*(g->V+1));
@@ -515,7 +515,6 @@ void greedy1(graph* g) {
 
 		for (int i=0; i<g->E; i++) {
 			e0 = g->edges[i];
-			fflush(stdout);
 			dist[e0->v1][e0->v2] = e0->w;
 			path[e0->v1][e0->v2] = (pathNode*)malloc(sizeof(pathNode));
 			path[e0->v1][e0->v2]->e = e0;
@@ -526,11 +525,31 @@ void greedy1(graph* g) {
 			path[e0->v2][e0->v1]->e = e0;
 			path[e0->v2][e0->v1]->next = NULL;
 		}
+	}
 
-		floyed(g, dist, path);
+	// free the space of two dimentional arrays dist and path
+	void freeDistAndPath() {
+		for (int i=1; i<=g->V; i++) {
+			free(dist[i]);
+			free(path[i]);
+		}
+		free(dist);
+		free(path);
+	}
+
+
+	maxDist = calcMaxDist(g);
+
+	initDistAndPath();
+
+	floyed(g, dist, path);
+
+	for (int k=1; k<g->T; k++) {
+
 
 		// find min dist between two terminals
 		tempMin = maxDist;
+		tempMax = 0;
 		for (int i=0; i<g->T; i++) {
 			for (int j=i+1; j<g->T; j++) {
 				if ((dist[g->t[i]][g->t[j]]!=0) && (dist[g->t[i]][g->t[j]]<tempMin)) {
@@ -538,7 +557,15 @@ void greedy1(graph* g) {
 					tempT2 = g->t[j];
 					tempMin	= dist[tempT1][tempT2];
 				}
+				if ((dist[g->t[i]][g->t[j]]<maxDist) && (dist[g->t[i]][g->t[j]]>maxDist)) {
+					tempMax = dist[g->t[i]][g->t[j]];
+				}
 			}
+		}
+
+
+		for (int i=1; i<=g->V; i++) {
+			g->nodeList[i].needOp = 0;
 		}
 
 		// choose the found two terminals and the path, and set all edge weights on path to 0
@@ -547,6 +574,8 @@ void greedy1(graph* g) {
 		while (pn1!=NULL) {
 			pn1->e->choose = 1;
 			pn1->e->w = 0;
+			g->nodeList[pn1->e->v1].needOp = 1;
+			g->nodeList[pn1->e->v2].needOp = 1;
 			pn1 = pn1->next;
 		}
 
@@ -557,37 +586,25 @@ void greedy1(graph* g) {
 			}
 		}
 
-	}
 
-	for (int i=1; i<=g->V; i++) {
-		free(dist[i]);
-		free(path[i]);
-	}
-	free(dist);
-	free(path);
+		distRange = tempMax/2; 	// adjustable variable
 
-}
-
-/* a test method to compute a spanning tree
-int testST(graph *g) {
-	int finish = 0;
-	g->edges[0]->choose = 1;
-	g->nodeList[g->edges[0]->v1].choose = 1;
-	g->nodeList[g->edges[0]->v2].choose = 1;
-	while (!finish) {
-		finish = 1;
-		for (int i=1; i<g->E; i++) {
-            //if(g->nodeList[g->edges[i]->v1] == NULL || g->nodeList[g->edges[i]->v2] == NULL) continue;
-			if (g->nodeList[g->edges[i]->v1].choose + g->nodeList[g->edges[i]->v2].choose==1) {
-				g->edges[i]->choose = 1;
-				g->nodeList[g->edges[i]->v1].choose = 1;
-				g->nodeList[g->edges[i]->v2].choose = 1;
-				finish = 0;
-				break;
+		for (int i=1; i<=g->V; i++) {
+			if (dist[tempT1][i]<=distRange) {
+				g->nodeList[i].needOp = 1;
+			}
+			if (dist[tempT2][i]<=distRange) {
+				g->nodeList[i].needOp = 1;
 			}
 		}
+
+		dijkstra(g, &dist, &path);
+
 	}
-} */
+
+	freeDistAndPath();
+
+}
 
 
 void testDelete(graph * g){
