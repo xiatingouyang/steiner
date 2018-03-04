@@ -482,13 +482,13 @@ void floyed(graph* g, long long** dist, pathNode*** path) {
 }
 
 void greedy1(graph* g) {
+
 	long long** dist;
 	pathNode*** path;	// the shortest path between i and j (exclude i and j)
 	long long maxDist, tempMin;
 	int tempT1, tempT2;
 	pathNode* pn1;
 	edge* e0;
-
 
 	maxDist = calcMaxDist(g);
 
@@ -515,6 +515,7 @@ void greedy1(graph* g) {
 
 		for (int i=0; i<g->E; i++) {
 			e0 = g->edges[i];
+			fflush(stdout);
 			dist[e0->v1][e0->v2] = e0->w;
 			path[e0->v1][e0->v2] = (pathNode*)malloc(sizeof(pathNode));
 			path[e0->v1][e0->v2]->e = e0;
@@ -523,7 +524,7 @@ void greedy1(graph* g) {
 			dist[e0->v2][e0->v1] = e0->w;
 			path[e0->v2][e0->v1] = (pathNode*)malloc(sizeof(pathNode));
 			path[e0->v2][e0->v1]->e = e0;
-			path[e0->v2][e0->v1]->next = NULL;;
+			path[e0->v2][e0->v1]->next = NULL;
 		}
 
 		floyed(g, dist, path);
@@ -597,7 +598,7 @@ int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
 
 	readInput(g);
-	dijkstra(g, 4);
+	//dijkstra(g, 4);
 	//report(g);
 
 
