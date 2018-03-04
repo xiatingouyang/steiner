@@ -1,10 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
-
+#include<limits.h>
 /*
 information about an edge
 */
-struct neighborr;
 
 typedef struct edgee
 {
@@ -34,12 +33,20 @@ typedef struct nodee
 {
 	int d;				// degree
 	int father;			// father node index (for Kruskal algorithm)
+	int heapPos; 		// the reference to its position in heap
+	int minDistance;	// the minimum distance from this node to a source (will specify in program)
 	int choose;			// 1 -- included in solution;	0 -- not included in solution, -1 deleted from the graph
 	int isTerminal;		// 1 -- is a terminal vertex,   0 -- isn't a terminal
 	neighbor* nghList;	// the adjacency list(doubly linked list): neighbor1 (v, e) <-> neighbor2 (v, e) <-> ....  <-> neighbor-d (v,e) -> NULL
 
 } node;
 
+
+typedef struct nodeee{
+	int v;
+	int d;
+	node n;
+} heapNode;
 
 /*
 The graph structure
@@ -94,29 +101,6 @@ void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
 	g -> edges[eIndex] -> e1 = addEdge(g, eIndex, vertex1, vertex2);
 	g -> edges[eIndex] -> e2 = addEdge(g, eIndex, vertex2, vertex1);
 
-	/*g -> nodeList[vertex1].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex2;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex1].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex1].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex1].nghList;
-		g -> nodeList[vertex1].nghList= ngh;
-	}
-
-	g -> nodeList[vertex2].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex1;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex2].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex2].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex2].nghList;
-		g -> nodeList[vertex2].nghList = ngh;
-	}*/
 }
 
 
@@ -154,8 +138,6 @@ void deleteNode(graph * g, int n){
 	}
 
 	g -> nodeList[n].choose = -1;
-
-
 
     free(g -> nodeList[n].nghList);
 	g -> nodeList[n].nghList = NULL;
@@ -252,6 +234,7 @@ void readInput(graph *g){
 		g -> nodeList[i].nghList = NULL;
 	}
 
+
 	for(int i = 0; i < e; i++){
 		scanf("E %d %d %d\n", &v1, &v2, &w);
 		add(g, i, v1, v2, w);
@@ -269,7 +252,7 @@ void readInput(graph *g){
 		g -> t[i] = tt;
 	}
 
-	//reduceEdge(g);
+	reduceEdge(g);
 
 
 }
@@ -312,6 +295,96 @@ int getFather(graph *g, int nodeIndex) {
 		return f2;
 	}
 
+}
+
+
+
+
+void swap(graph *g, heapNode* n1, heapNode* n2){
+	heapNode temp = *n1;
+	*n1 = *n2;
+	*n2 = temp;
+
+
+	int p = g->nodeList[n1 -> v].heapPos;
+	g->nodeList[n1 ->v].heapPos = g->nodeList[n2 ->v].heapPos;
+	g->nodeList[n2 ->v].heapPos = p;
+}
+
+
+void goup(graph *g, heapNode *heap, int i){
+	if(i == 0) return;
+		
+	int prev = (i - 1) / 2;
+	if(heap[prev].d > heap[i].d){
+		swap(g, &heap[prev], &heap[i]);
+		goup(g, heap, prev);
+	}
+}
+
+
+void heapify(graph *g, heapNode *heap, int i, int size){
+	if (2*i+1 >= size){
+		return;
+	}
+	heapNode e = heap[i];
+	heapNode e1 = heap[2*i+1];
+	heapNode e2;
+	e2.v = -1; e2.d = INT_MAX;
+	if (2 * i + 2 < size){
+		e2 = heap[2*i+2];
+	}
+	int min = e1.d < e2.d ? 2*i+1 : 2*i+2;
+	if (e.d > heap[min].d){
+		swap(g, &heap[min], &heap[i]);
+		heapify(g, heap, min, size);
+	}
+}
+
+void dijkstra(graph *g, int source){
+	int n = g -> V;
+	heapNode *heap = (heapNode *)malloc(sizeof(heapNode) * (n+1));
+	int size = n;
+	int i, j;
+	for(i = 0; i < n; i ++){
+		heap[i].v = i + 1;
+		heap[i].n = g -> nodeList[i+1];
+		g -> nodeList[i+1].heapPos = i;
+		if (i+1 == source) heap[i].d = 0;
+		else heap[i].d = INT_MAX;
+	}
+
+
+	for(i = 1; i < n; i ++){
+		goup(g, heap, i);
+	}
+
+	while (size){
+		int v_min = heap[0].v;
+		int d = heap[0].d;
+		neighbor* ptr = g -> nodeList[v_min].nghList;
+		swap(g, &heap[0], &heap[--size]);
+
+		heapify(g, heap, 0, size);
+		while(ptr != NULL){
+
+			int u = ptr -> v;
+			int w = ptr -> e -> w;
+			int index = g -> nodeList[u].heapPos;
+			if (heap[index].d > w + d ){
+				//printf("<%d-%d>\n", v_min, u);
+				heap[index].d = w + d;
+				goup(g, heap, index);
+			}
+			ptr = ptr->next;
+			
+		}
+	}
+
+	for(i = 0; i < n; i++){
+		printf("%d %d\n", heap[i].v, heap[i].d);
+	}
+	
 }
 
 
@@ -365,10 +438,11 @@ void testDelete(graph * g){
 
 int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
+
 	readInput(g);
-	report(g);
-	kruskal(g);
-	//testST(g);
-	outputResult(g);
+	dijkstra(g, 4);
+	//report(g);
+	//kruskal(g);
+	//outputResult(g);
 	return 0;
 }
