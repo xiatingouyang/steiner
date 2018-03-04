@@ -10,7 +10,7 @@ typedef struct edgee
 {
 
 	int v1, v2;	// the two vertex connected by the edge
-	int w;		// weight
+	int w, originalW;		// weight
 	int choose;	// 1 -- included in solution;	0 -- not included in solution； -1 temporarly deleted from the graph
 	struct neighborr* e1;
 	struct neighborr* e2; // pointer to the specify edge of the two adjacency list of the two neighbor;
@@ -55,6 +55,12 @@ typedef struct gg{
 	int *t; // the array of terminals. (index starting from 0)
 } graph;
 
+
+typedef struct pathNodee {
+	edge* e;
+	struct pathNodee* next;
+} pathNode;
+
 // add an edge into vertex1's adjacency list which connects vertex2.
 neighbor * addEdge(graph *g, int eIndex, int vertex1, int vertex2){
 	neighbor* ngh;
@@ -81,42 +87,18 @@ neighbor * addEdge(graph *g, int eIndex, int vertex1, int vertex2){
 void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
 	neighbor* ngh;
 
-
 	// add the edge to the graph
 	g -> edges[eIndex] = (edge*)malloc(sizeof(edge));
 	g -> edges[eIndex]->v1 = vertex1;
 	g -> edges[eIndex]->v2 = vertex2;
 	g -> edges[eIndex]->w = weight;
+	g -> edges[eIndex]->originalW = weight;
 	g -> edges[eIndex]->choose = 0;
 
 
 	// add the edge to the adjancency list of the two vertex
 	g -> edges[eIndex] -> e1 = addEdge(g, eIndex, vertex1, vertex2);
 	g -> edges[eIndex] -> e2 = addEdge(g, eIndex, vertex2, vertex1);
-
-	/*g -> nodeList[vertex1].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex2;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex1].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex1].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex1].nghList;
-		g -> nodeList[vertex1].nghList= ngh;
-	}
-
-	g -> nodeList[vertex2].d ++;
-	ngh = (neighbor *)malloc(sizeof(neighbor));
-	ngh -> v = vertex1;
-	ngh -> e = g -> edges[eIndex];
-	if(g -> nodeList[vertex2].nghList == NULL){
-		ngh -> next = NULL;
-		g -> nodeList[vertex2].nghList = ngh;
-	} else {
-		ngh -> next = g -> nodeList[vertex2].nghList;
-		g -> nodeList[vertex2].nghList = ngh;
-	}*/
 }
 
 
@@ -278,7 +260,7 @@ void outputResult(graph *g) {
 	long long value = 0;
 	for (int i=0; i<g->E; i++) {
 		if (g->edges[i]->choose==1) {
-			value += g->edges[i]->w;
+			value += g->edges[i]->originalW;
 		}
 	}
 	printf("VALUE %lld\n", value);
@@ -314,7 +296,6 @@ int getFather(graph *g, int nodeIndex) {
 
 }
 
-
 void kruskal(graph *g) {
 	int i, f1, f2;
 
@@ -338,7 +319,149 @@ void kruskal(graph *g) {
 	}
 }
 
-// a test method to compute a spanning tree
+
+long long calcMaxDist(graph *g) {
+	return 10000000000;
+}
+
+void freePath(pathNode* pn2) {
+	pathNode* pn1;
+	while (pn2!=NULL) {
+		pn1 = pn2;
+		pn2 = pn2->next;
+		free(pn1);
+	}
+}
+
+void floyed(graph* g, long long** dist, pathNode*** path) {
+	int i,j,k;
+	pathNode *pn1,*pn2,*pn3;
+
+	for (k=1; k<=g->V; k++) {
+		for (i=1; i<=g->V; i++) {
+			for (j=1; j<=g->V; j++) {
+				if (dist[i][j] > dist[i][k] + dist[k][j]) {
+					dist[i][j] = dist[i][k] + dist[k][j];
+
+					// free the previous path[i][j]
+					freePath(path[i][j]);
+
+					// create new path[i][j] (concatenate path[i][k] and path[k][j]) 
+					pn1 = (pathNode*)malloc(sizeof(pathNode));
+					pn3 = path[i][k];
+					pn1->e = pn3->e;
+					path[i][j] = pn1;
+					pn3 = pn3->next;
+					while (pn3!=NULL) {
+						pn2 = (pathNode*)malloc(sizeof(pathNode));
+						pn2->e = pn3->e;
+						pn1->next = pn2;
+						pn1 = pn2;
+						pn3 = pn3->next;
+					}
+					pn3 = path[k][j];
+					while (pn3!=NULL) {
+						pn2 = (pathNode*)malloc(sizeof(pathNode));
+						pn2->e = pn3->e;
+						pn1->next = pn2;
+						pn1 = pn2;
+						pn3 = pn3->next;
+					}
+					pn1->next = NULL;
+
+				}
+			}
+		}
+	}
+}
+
+void greedy1(graph* g) {
+	long long** dist;
+	pathNode*** path;	// the shortest path between i and j (exclude i and j)
+	long long maxDist, tempMin;
+	int tempT1, tempT2;
+	pathNode* pn1;
+	edge* e0;
+
+
+	maxDist = calcMaxDist(g);
+
+	for (int k=1; k<g->T; k++) {
+		// initialize two dimentional arrays dist and path
+		dist = (long long**) malloc(sizeof(long long*)*(g->V+1));
+		for (int i=1; i<=g->V; i++) {
+			dist[i] = (long long*) malloc(sizeof(long long)*(g->V+1));
+		}
+		path = (pathNode***) malloc(sizeof(pathNode**)*(g->V+1));
+		for (int i=1; i<=g->V; i++) {
+			path[i] = (pathNode**) malloc(sizeof(pathNode*)*(g->V+1));
+		}
+
+		for (int i=1; i<=g->V; i++) {
+			for (int j=1; j<=g->V; j++) {
+				dist[i][j] = maxDist;
+				path[i][j] = NULL;
+				if (i==j) {
+					dist[i][j] = 0;
+				}
+			}
+		}
+
+		for (int i=0; i<g->E; i++) {
+			e0 = g->edges[i];
+			dist[e0->v1][e0->v2] = e0->w;
+			path[e0->v1][e0->v2] = (pathNode*)malloc(sizeof(pathNode));
+			path[e0->v1][e0->v2]->e = e0;
+			path[e0->v1][e0->v2]->next = NULL;
+
+			dist[e0->v2][e0->v1] = e0->w;
+			path[e0->v2][e0->v1] = (pathNode*)malloc(sizeof(pathNode));
+			path[e0->v2][e0->v1]->e = e0;
+			path[e0->v2][e0->v1]->next = NULL;;
+		}
+
+		floyed(g, dist, path);
+
+		// find min dist between two terminals
+		tempMin = maxDist;
+		for (int i=0; i<g->T; i++) {
+			for (int j=i+1; j<g->T; j++) {
+				if ((dist[g->t[i]][g->t[j]]!=0) && (dist[g->t[i]][g->t[j]]<tempMin)) {
+					tempT1 = g->t[i];
+					tempT2 = g->t[j];
+					tempMin	= dist[tempT1][tempT2];
+				}
+			}
+		}
+
+		// choose the found two terminals and the path, and set all edge weights on path to 0
+		// NOTICE: the original edge weights was stored in edge.originalW and edge.w will be overridden (erased)
+		pn1 = path[tempT1][tempT2];
+		while (pn1!=NULL) {
+			pn1->e->choose = 1;
+			pn1->e->w = 0;
+			pn1 = pn1->next;
+		}
+
+		//free pathNode array
+		for (int i=1; i<=g->V; i++) {
+			for (int j=1; j<=g->V; j++) {
+				freePath(path[i][j]);
+			}
+		}
+
+	}
+
+	for (int i=1; i<=g->V; i++) {
+		free(dist[i]);
+		free(path[i]);
+	}
+	free(dist);
+	free(path);
+
+}
+
+/* a test method to compute a spanning tree
 int testST(graph *g) {
 	int finish = 0;
 	g->edges[0]->choose = 1;
@@ -357,7 +480,8 @@ int testST(graph *g) {
 			}
 		}
 	}
-}
+} */
+
 
 void testDelete(graph * g){
 	deleteNode(g, 2);
@@ -367,7 +491,12 @@ int main(){
 	graph *g = (graph *)malloc(sizeof(graph));
 	readInput(g);
 	//report(g);
-	kruskal(g);
+
+	if (g->V<10000) {
+		greedy1(g);
+	} else {
+		kruskal(g);
+	}
 	outputResult(g);
 	return 0;
 }
