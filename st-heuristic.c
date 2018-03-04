@@ -423,7 +423,11 @@ void kruskal(graph *g) {
 
 
 long long calcMaxDist(graph *g) {
-	return 10000000000;
+	long long maxDist = 0;
+	for (int i=0; i<g->E; i++) {
+		maxDist += g->edges[i]->w;
+	}
+	return maxDist;
 }
 
 void freePath(pathNode* pn2) {
