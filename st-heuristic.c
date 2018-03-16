@@ -69,6 +69,11 @@ typedef struct pathNodee {
 	struct pathNodee* next;
 } pathNode;
 
+void debug(char* str) {
+	printf("%s\n", str);
+	fflush(stdout);
+}
+
 // add an edge into vertex1's adjacency list which connects vertex2.
 neighbor * addEdge(graph *g, int eIndex, int vertex1, int vertex2){
 	neighbor* ngh;
@@ -434,6 +439,8 @@ long long calcMaxDist(graph *g) {
 void freePath(pathNode* pn2) {
 	pathNode* pn1;
 	while (pn2!=NULL) {
+printf("%d\nss",pn2->e.w);
+fflush(stdout);
 		pn1 = pn2;
 		pn2 = pn2->next;
 		free(pn1);
@@ -540,13 +547,16 @@ void greedy1(graph* g) {
 
 	maxDist = calcMaxDist(g);
 
+debug("ff");
 	initDistAndPath();
 
 	floyed(g, dist, path);
 
+debug("333");
 	for (int k=1; k<g->T; k++) {
 
 
+debug("start");
 		// find min dist between two terminals
 		tempMin = maxDist;
 		tempMax = 0;
@@ -562,8 +572,7 @@ void greedy1(graph* g) {
 				}
 			}
 		}
-
-
+printf("%d %d\n", tempT1, tempT2);
 		for (int i=1; i<=g->V; i++) {
 			g->nodeList[i].needOp = 0;
 		}
@@ -579,6 +588,7 @@ void greedy1(graph* g) {
 			pn1 = pn1->next;
 		}
 
+debug("7878");
 		//free pathNode array
 		for (int i=1; i<=g->V; i++) {
 			for (int j=1; j<=g->V; j++) {
@@ -587,19 +597,23 @@ void greedy1(graph* g) {
 		}
 
 
+debug("123213");
 		distRange = tempMax/2; 	// adjustable variable
 
 		for (int i=1; i<=g->V; i++) {
+debug("22");
 			if (dist[tempT1][i]<=distRange) {
 				g->nodeList[i].needOp = 1;
 			}
+debug("99");
 			if (dist[tempT2][i]<=distRange) {
 				g->nodeList[i].needOp = 1;
 			}
 		}
 
-		dijkstra(g, &dist, &path);
+		//dijkstra(g, &dist, &path);
 
+debug("9");
 	}
 
 	freeDistAndPath();
