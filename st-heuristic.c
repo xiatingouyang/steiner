@@ -665,11 +665,9 @@ printf("%d %d\n", tempT1, tempT2);
 
 
 		for (int i=1; i<=g->V; i++) {
-debug("22");
 			if (dist[tempT1][i]<=distRange) {
 				g->nodeList[i].needOp = 1;
 			}
-debug("99");
 			if (dist[tempT2][i]<=distRange) {
 				g->nodeList[i].needOp = 1;
 			}
