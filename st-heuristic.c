@@ -34,6 +34,7 @@ typedef struct nodee
 	int d;				// degree
 	int father;			// father node index (for Kruskal algorithm)
 	int heapPos; 		// the reference to its position in heap
+	edge* prevEdge;
 	int minDistance;	// the minimum distance from this node to a source (will specify in program)
 	int choose;			// 1 -- included in solution;	0 -- not included in solution, -1 deleted from the graph
 	int isTerminal;		// 1 -- is a terminal vertex,   0 -- isn't a terminal
@@ -168,7 +169,16 @@ void deleteNode(graph * g, int n){
     }
 
 }
+void freePath(pathNode* pn2) {
+	pathNode* pn1;
 
+	while (pn2!=NULL) {
+		pn1 = pn2;
+		pn2 = pn2->next;
+		//printf("%p\n", pn1);
+		free(pn1);
+	}
+}
 
 // report the specs of the graph (V, E, degree for each v, all neighbors of a v, the terminals)
 void report(graph *g){
@@ -320,7 +330,7 @@ void swap(graph *g, heapNode* n1, heapNode* n2){
 	*n1 = *n2;
 	*n2 = temp;
 
-
+	// you still need to swap the reference in the heap
 	int p = g->nodeList[n1 -> v].heapPos;
 	g->nodeList[n1 ->v].heapPos = g->nodeList[n2 ->v].heapPos;
 	g->nodeList[n2 ->v].heapPos = p;
@@ -356,21 +366,40 @@ void heapify(graph *g, heapNode *heap, int i, int size){
 	}
 }
 
-void dijkstra(graph *g, int source){
+/*
+
+input: g[needOp], source
+output: linked-list[i]: source  -> i path.
+
+
+
+*/
+
+
+void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
+
 	int n = g -> V;
 	heapNode *heap = (heapNode *)malloc(sizeof(heapNode) * (n+1));
-	int size = n;
+	int size = 0;
+	int originalSize;
 	int i, j;
-	for(i = 0; i < n; i ++){
-		heap[i].v = i + 1;
-		heap[i].n = g -> nodeList[i+1];
-		g -> nodeList[i+1].heapPos = i;
-		if (i+1 == source) heap[i].d = 0;
-		else heap[i].d = INT_MAX;
+
+	for(i = 1; i <= n; i ++){
+		if (g -> nodeList[i].needOp){
+			heap[size].v = i;
+			heap[size].n = g -> nodeList[i];
+			g -> nodeList[i].heapPos = size;
+			g -> nodeList[i].prevEdge = NULL;
+			if (i == source) heap[size].d = 0;
+			else heap[size].d = INT_MAX;
+			size++;
+		}
+		
 	}
 
 
-	for(i = 1; i < n; i ++){
+	originalSize = size;
+	for(i = 1; i < size; i ++){
 		goup(g, heap, i);
 	}
 
@@ -379,30 +408,77 @@ void dijkstra(graph *g, int source){
 		int d = heap[0].d;
 		neighbor* ptr = g -> nodeList[v_min].nghList;
 		swap(g, &heap[0], &heap[--size]);
-
 		heapify(g, heap, 0, size);
+
 		while(ptr != NULL){
 
 			int u = ptr -> v;
+			if(!g -> nodeList[u].needOp){
+				ptr = ptr -> next;
+				continue;
+			}
 			int w = ptr -> e -> w;
 			int index = g -> nodeList[u].heapPos;
 			if (heap[index].d > w + d ){
-				//printf("<%d-%d>\n", v_min, u);
+				
+				g -> nodeList[u].prevEdge = ptr->e;
+				//printf("(%d, %d) ", g -> nodeList[u].prevEdge->v1, g -> nodeList[u].prevEdge->v2);
 				heap[index].d = w + d;
 				goup(g, heap, index);
 			}
 			ptr = ptr->next;
+		}
+		//printf("\n");
+	}
+	
+
+	
+	
+	
+	for(i = 0; i < originalSize; i++){
+		if(heap[i].v == source) continue;
+		(*dist)[source][heap[i].v] = heap[i].d;
+		
+		freePath((*path)[source][heap[i].v]);
+		pathNode* p1 = (*path)[source][heap[i].v] = NULL;
+		
+		int v = heap[i].v;
+		pathNode* ptr1, ptr2;
+		edge *prev = g -> nodeList[v].prevEdge;
+		
+		while(prev != NULL){
+			
+			pathNode* ptr1 = (pathNode*)malloc(sizeof(pathNode));
+			
+			ptr1 -> e = prev;
+			ptr1 -> next = p1;
+			p1 = ptr1;
+
+			int v1 = prev -> v1;
+			int v2 = prev -> v2;
+			v = (v == v1 ? v2 : v1);
+			prev = g -> nodeList[v].prevEdge;
+
 			
 		}
+		
 	}
 
-	for(i = 0; i < n; i++){
-		printf("%d %d\n", heap[i].v, heap[i].d);
-	}
+	
 	
 }
 
-
+void doDijkstra(graph *g, long long ***dist, pathNode ****path){
+	int i;
+	for(i = 1; i <= g->V; i++){
+		g -> nodeList[i].needOp = 1;
+	}
+	for(i = 1; i <= g->V; i++){
+		if (g -> nodeList[i].needOp){
+			dijkstra(g, i, dist, path);
+		}
+	}
+}
 
 void kruskal(graph *g) {
 	int i, f1, f2;
@@ -434,17 +510,6 @@ long long calcMaxDist(graph *g) {
 		maxDist += g->edges[i]->w;
 	}
 	return maxDist;
-}
-
-void freePath(pathNode* pn2) {
-	pathNode* pn1;
-	while (pn2!=NULL) {
-printf("%d\nss",pn2->e.w);
-fflush(stdout);
-		pn1 = pn2;
-		pn2 = pn2->next;
-		free(pn1);
-	}
 }
 
 void floyed(graph* g, long long** dist, pathNode*** path) {
@@ -498,7 +563,7 @@ void greedy1(graph* g) {
 	pathNode* pn1;
 	edge* e0;
 
-
+	maxDist = INT_MAX;
 	// initialize two dimentional arrays dist and path
 	void initDistAndPath() {
 		dist = (long long**) malloc(sizeof(long long*)*(g->V+1));
@@ -536,6 +601,12 @@ void greedy1(graph* g) {
 
 	// free the space of two dimentional arrays dist and path
 	void freeDistAndPath() {
+		// free pathNode array
+		for (int i=1; i<=g->V; i++) {
+			for (int j=1; j<=g->V; j++) {
+				freePath(path[i][j]);
+			}
+		}
 		for (int i=1; i<=g->V; i++) {
 			free(dist[i]);
 			free(path[i]);
@@ -587,18 +658,11 @@ printf("%d %d\n", tempT1, tempT2);
 			g->nodeList[pn1->e->v2].needOp = 1;
 			pn1 = pn1->next;
 		}
-
-debug("7878");
-		//free pathNode array
-		for (int i=1; i<=g->V; i++) {
-			for (int j=1; j<=g->V; j++) {
-				freePath(path[i][j]);
-			}
-		}
+		///dist[tempT1][tempT2] = 0;
 
 
-debug("123213");
-		distRange = tempMax/2; 	// adjustable variable
+		distRange = tempMax; 	// adjustable variable
+
 
 		for (int i=1; i<=g->V; i++) {
 debug("22");
@@ -611,12 +675,11 @@ debug("99");
 			}
 		}
 
-		//dijkstra(g, &dist, &path);
-
-debug("9");
+		doDijkstra(g, &dist, &path);
+		
 	}
-
 	freeDistAndPath();
+
 
 }
 

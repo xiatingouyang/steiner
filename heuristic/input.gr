@@ -1,0 +1,28 @@
+SECTION Graph
+Nodes 7
+Edges 12
+E 7 1 101
+E 7 2 102
+E 7 3 103
+E 7 4 104
+E 7 5 105
+E 7 6 106
+E 1 2 201
+E 2 3 202
+E 3 4 203
+E 4 5 204
+E 5 6 205
+E 6 1 206
+END
+
+SECTION Terminals
+Terminals 6
+T 1
+T 2
+T 3
+T 4
+T 5
+T 6
+END
+
+EOF
