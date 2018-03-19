@@ -1,6 +1,6 @@
 gcc st-heuristic.c -o st
 
-./st < heuristic/input.gr
+./st < heuristic/ins_0.gr
 
 
 

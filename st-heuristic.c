@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<limits.h>
+#include<string.h>
 /*
 information about an edge
 */
@@ -240,8 +241,16 @@ void reduceEdge(graph * g){
 void readInput(graph *g){
 	int v,e,t,v1,v2,w,tt;
 
+	char input[50];
+	scanf("%s", input);
+	while(strcmp(input, "SECTION") != 0){
+		scanf("%s", input);
+		if (strcmp(input, "Graph") == 0){
+			break;
+		}
+	} 
 	// read the vertices and edges
-	scanf("SECTION Graph\nNodes %d\nEdges %d\n", &v, &e);
+	scanf("Nodes %d\nEdges %d\n", &v, &e);
 	g -> V = v;
 	g -> E = e;
 	g -> edges = (edge**)malloc(e * sizeof(edge*));
@@ -252,13 +261,14 @@ void readInput(graph *g){
 		g -> nodeList[i].isTerminal = 0;
 		g -> nodeList[i].nghList = NULL;
 	}
-
+	
 
 	for(int i = 0; i < e; i++){
 		scanf("E %d %d %d\n", &v1, &v2, &w);
 		add(g, i, v1, v2, w);
 
 	}
+	
 
 	// read the terminals
 	scanf("END\nSECTION Terminals\nTerminals %d\n", &t);
@@ -471,6 +481,7 @@ void doDijkstra(graph *g, long long ***dist, pathNode ****path){
 	for(i = 1; i <= g->V; i++){
 		if (g -> nodeList[i].needOp){
 			dijkstra(g, i, dist, path);
+
 		}
 	}
 }
@@ -549,6 +560,7 @@ void floyed(graph* g, long long** dist, pathNode*** path) {
 			}
 		}
 	}
+	printf("here\n");
 }
 
 void greedy1(graph* g) {
@@ -666,12 +678,12 @@ void greedy1(graph* g) {
 				g->nodeList[i].needOp = 1;
 			}
 		}
-
-		doDijkstra(g, &dist, &path);
+		floyed(g, dist ,path);
+		//doDijkstra(g, &dist, &path);
 		
 	}
 	freeDistAndPath();
-
+	printf("hesssssssre\n");
 
 }
 
