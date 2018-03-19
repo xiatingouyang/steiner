@@ -47,7 +47,7 @@ typedef struct nodee
 
 typedef struct nodeee{
 	int v;
-	int d;
+	long long d;
 	node n;
 } heapNode;
 
@@ -378,7 +378,7 @@ output: linked-list[i]: source  -> i path.
 */
 
 
-void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
+void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 
 	int n = g -> V;
 	heapNode *heap = (heapNode *)malloc(sizeof(heapNode) * (n+1));
@@ -393,7 +393,7 @@ void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
 			g -> nodeList[i].heapPos = size;
 			g -> nodeList[i].prevEdge = NULL;
 			if (i == source) heap[size].d = 0;
-			else heap[size].d = INT_MAX;
+			else heap[size].d = LLONG_MAX;
 			size++;
 		}
 		
@@ -407,7 +407,7 @@ void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
 
 	while (size){
 		int v_min = heap[0].v;
-		int d = heap[0].d;
+		long long d = heap[0].d;
 		neighbor* ptr = g -> nodeList[v_min].nghList;
 		swap(g, &heap[0], &heap[--size]);
 		heapify(g, heap, 0, size);
@@ -415,7 +415,7 @@ void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
 		while(ptr != NULL){
 
 			int u = ptr -> v;
-			if(!g -> nodeList[u].needOp){
+			if((!g -> nodeList[u].needOp)  && (g->nodeList[u].heapPos>=size)){	////////////////////////////////////////////
 				ptr = ptr -> next;
 				continue;
 			}
@@ -430,19 +430,20 @@ void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
 			}
 			ptr = ptr->next;
 		}
-		//printf("\n");
+		
+		//dprintf("\n");
 	}
 	
 
-	
+	printf("another ting\n");
 	
 	
 	for(i = 0; i < originalSize; i++){
 		if(heap[i].v == source) continue;
-		(*dist)[source][heap[i].v] = heap[i].d;
+		dist[source][heap[i].v] = heap[i].d;
 		
-		freePath((*path)[source][heap[i].v]);
-		pathNode* p1 = (*path)[source][heap[i].v] = NULL;
+		freePath(path[source][heap[i].v]);
+		path[source][heap[i].v] = NULL;
 		
 		int v = heap[i].v;
 		pathNode* ptr1, ptr2;
@@ -453,32 +454,32 @@ void dijkstra(graph *g, int source, long long ***dist, pathNode ****path){
 			pathNode* ptr1 = (pathNode*)malloc(sizeof(pathNode));
 			
 			ptr1 -> e = prev;
-			ptr1 -> next = p1;
-			p1 = ptr1;
+			ptr1 -> next = path[source][heap[i].v];
+			path[source][heap[i].v] = ptr1;
 
 			int v1 = prev -> v1;
 			int v2 = prev -> v2;
 			v = (v == v1 ? v2 : v1);
 			prev = g -> nodeList[v].prevEdge;
 
-			
+			//printf("%p\n", prev);	
+			//printf("sss\n");	
 		}
-		
+		//printf("%d %d\n", i, originalSize);
 	}
-
+	free(heap);
 	
 	
 }
 
-void doDijkstra(graph *g, long long ***dist, pathNode ****path){
+void doDijkstra(graph *g, long long **dist, pathNode ***path){
 	int i;
-	for(i = 1; i <= g->V; i++){
-		g -> nodeList[i].needOp = 1;
-	}
+	// for(i = 1; i <= g->V; i++){
+	// 	g -> nodeList[i].needOp = 1;
+	// }
 	for(i = 1; i <= g->V; i++){
 		if (g -> nodeList[i].needOp){
 			dijkstra(g, i, dist, path);
-
 		}
 	}
 }
@@ -622,22 +623,21 @@ void greedy1(graph* g) {
 
 	maxDist = calcMaxDist(g);
 
-debug("ff");
 	initDistAndPath();
 
 	floyed(g, dist, path);
 
-debug("333");
 	for (int k=1; k<g->T; k++) {
-
-
-debug("start");
 		// find min dist between two terminals
 		tempMin = maxDist;
 		tempMax = 0;
 		for (int i=0; i<g->T; i++) {
 			for (int j=i+1; j<g->T; j++) {
 				if ((dist[g->t[i]][g->t[j]]!=0) && (dist[g->t[i]][g->t[j]]<tempMin)) {
+					if (g->t[i]==24&&g->t[j]==32) {
+						printf("%lld\n",dist[g->t[i]][g->t[j]]);
+						debug("oh fuck");
+					}
 					tempT1 = g->t[i];
 					tempT2 = g->t[j];
 					tempMin	= dist[tempT1][tempT2];
@@ -647,7 +647,6 @@ debug("start");
 				}
 			}
 		}
-printf("%d %d\n", tempT1, tempT2);
 		for (int i=1; i<=g->V; i++) {
 			g->nodeList[i].needOp = 0;
 		}
@@ -662,7 +661,9 @@ printf("%d %d\n", tempT1, tempT2);
 			g->nodeList[pn1->e->v2].needOp = 1;
 			pn1 = pn1->next;
 		}
-		///dist[tempT1][tempT2] = 0;
+
+		dist[tempT1][tempT2] = 0;
+		dist[tempT2][tempT1] = 0;
 
 
 		distRange = tempMax; 	// adjustable variable
@@ -676,8 +677,10 @@ printf("%d %d\n", tempT1, tempT2);
 				g->nodeList[i].needOp = 1;
 			}
 		}
-		floyed(g, dist ,path);
-		//doDijkstra(g, &dist, &path);
+		//floyed(g, dist ,path);
+printf("%d %d**\n", tempT1, tempT2);
+		doDijkstra(g, dist, path);
+printf("%d %d&&\n", tempT1, tempT2);
 		
 	}
 	freeDistAndPath();
