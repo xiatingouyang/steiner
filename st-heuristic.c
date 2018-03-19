@@ -324,9 +324,6 @@ int getFather(graph *g, int nodeIndex) {
 }
 
 
-
-
-
 void swap(graph *g, heapNode* n1, heapNode* n2){
 	heapNode temp = *n1;
 	*n1 = *n2;
@@ -357,11 +354,11 @@ void heapify(graph *g, heapNode *heap, int i, int size){
 	heapNode e = heap[i];
 	heapNode e1 = heap[2*i+1];
 	heapNode e2;
-	e2.v = -1; e2.d = INT_MAX;
+	e2.v = -1; e2.d = LLONG_MAX;
 	if (2 * i + 2 < size){
 		e2 = heap[2*i+2];
 	}
-	int min = e1.d < e2.d ? 2*i+1 : 2*i+2;
+	int min = e1.d <= e2.d ? 2*i+1 : 2*i+2;
 	if (e.d > heap[min].d){
 		swap(g, &heap[min], &heap[i]);
 		heapify(g, heap, min, size);
@@ -404,25 +401,26 @@ void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 	for(i = 1; i < size; i ++){
 		goup(g, heap, i);
 	}
-
+//printf("hehe start\n");
 	while (size){
 		int v_min = heap[0].v;
 		long long d = heap[0].d;
 		neighbor* ptr = g -> nodeList[v_min].nghList;
 		swap(g, &heap[0], &heap[--size]);
 		heapify(g, heap, 0, size);
-
+//printf("%d %lld fjdsfjdklsfjslfjsl\n",v_min,d);
 		while(ptr != NULL){
 
 			int u = ptr -> v;
-			if((!g -> nodeList[u].needOp)  && (g->nodeList[u].heapPos>=size)){	////////////////////////////////////////////
+			if((!g -> nodeList[u].needOp) ){	////////////////////////////////////////////
 				ptr = ptr -> next;
 				continue;
 			}
 			int w = ptr -> e -> w;
 			int index = g -> nodeList[u].heapPos;
 			if (heap[index].d > w + d ){
-				
+//if (g->nodeList[u].heapPos>=size)
+//printf("%d %d %lld//////////////////////////////////////////////////\n",g->nodeList[u].heapPos, size, d);
 				g -> nodeList[u].prevEdge = ptr->e;
 				//printf("(%d, %d) ", g -> nodeList[u].prevEdge->v1, g -> nodeList[u].prevEdge->v2);
 				heap[index].d = w + d;
@@ -435,7 +433,7 @@ void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 	}
 	
 
-	printf("another ting\n");
+	// printf("another ting\n");
 	
 	
 	for(i = 0; i < originalSize; i++){
@@ -634,10 +632,6 @@ void greedy1(graph* g) {
 		for (int i=0; i<g->T; i++) {
 			for (int j=i+1; j<g->T; j++) {
 				if ((dist[g->t[i]][g->t[j]]!=0) && (dist[g->t[i]][g->t[j]]<tempMin)) {
-					if (g->t[i]==24&&g->t[j]==32) {
-						printf("%lld\n",dist[g->t[i]][g->t[j]]);
-						debug("oh fuck");
-					}
 					tempT1 = g->t[i];
 					tempT2 = g->t[j];
 					tempMin	= dist[tempT1][tempT2];
@@ -678,9 +672,9 @@ void greedy1(graph* g) {
 			}
 		}
 		//floyed(g, dist ,path);
-printf("%d %d**\n", tempT1, tempT2);
+//printf("%d %d**\n", tempT1, tempT2);
 		doDijkstra(g, dist, path);
-printf("%d %d&&\n", tempT1, tempT2);
+//printf("%d %d&&\n", tempT1, tempT2);
 		
 	}
 	freeDistAndPath();
