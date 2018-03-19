@@ -472,9 +472,9 @@ void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 
 void doDijkstra(graph *g, long long **dist, pathNode ***path){
 	int i;
-	// for(i = 1; i <= g->V; i++){
-	// 	g -> nodeList[i].needOp = 1;
-	// }
+
+	
+
 	for(i = 1; i <= g->V; i++){
 		if (g -> nodeList[i].needOp){
 			dijkstra(g, i, dist, path);
@@ -621,11 +621,19 @@ void greedy1(graph* g) {
 
 	maxDist = calcMaxDist(g);
 
+
+
+
 	initDistAndPath();
 
 	floyed(g, dist, path);
 
+
+
 	for (int k=1; k<g->T; k++) {
+
+
+
 		// find min dist between two terminals
 		tempMin = maxDist;
 		tempMax = 0;
@@ -641,6 +649,8 @@ void greedy1(graph* g) {
 				}
 			}
 		}
+
+
 		for (int i=1; i<=g->V; i++) {
 			g->nodeList[i].needOp = 0;
 		}
@@ -672,9 +682,7 @@ void greedy1(graph* g) {
 			}
 		}
 		//floyed(g, dist ,path);
-//printf("%d %d**\n", tempT1, tempT2);
 		doDijkstra(g, dist, path);
-//printf("%d %d&&\n", tempT1, tempT2);
 		
 	}
 	freeDistAndPath();
