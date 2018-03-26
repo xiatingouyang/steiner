@@ -217,7 +217,6 @@ void replace_edge(graph * g, int v1, int v2, int w, edge * e1, edge * e2) {
 
 	// add the edge to the graph
 	add(g, eIndex, v1, v2, w);
-	g->cur_v_num++;
 	g->cur_e_num--;
 
 	//store the information of deleted edgee
@@ -231,6 +230,13 @@ void replace_edge(graph * g, int v1, int v2, int w, edge * e1, edge * e2) {
 	g->edges[eIndex]->e2 = addEdge(g, eIndex, v2, v1);
 
 }
+
+/*  //////////////////////////
+DELETE EDGE, NODE UPDATE NEIGHOR, FREE MEMORY, LINKED LIST. 
+
+///////////////////////// */
+
+
 
 void reduce(graph * g) {
 	//d1
@@ -324,7 +330,7 @@ void reduce(graph * g) {
 		}
 
 	}
-	
+	g->cur_v_num-=beg1;
 }
 
 
