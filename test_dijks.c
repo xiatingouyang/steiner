@@ -63,8 +63,6 @@ typedef struct gg{
 	edge ** edges;	// all edges  (index starting from 0)
 	node* nodeList;	// all vertices (index starting from 1)
 	int *t; // the array of terminals. (index starting from 0)
-	int cur_v_num; // after reduction, the current number of nodes
-	int cur_e_num; // after reduction, the current number of edges
 } graph;
 
 
@@ -121,223 +119,57 @@ void add(graph *g, int eIndex, int vertex1, int vertex2, int weight){
 
 }
 
-void deleteNode(graph * g, int n) {
-	neighbor* ngh = g->nodeList[n].nghList;
+
+// delete the specify node and all the edges connected with this node. (also will delete the specified node in the adjacency list)
+
+void deleteNode(graph * g, int n){
+	neighbor* ngh = g -> nodeList[n].nghList;
 	//edge* e = ngh -> e;
 
 	//printf("\n%d- ", n);
-	while (ngh != NULL) {
-		int num = ngh->v;
-		edge* e = ngh->e;
-
-		g->nodeList[num].d--; // add from reduceEdge
-		e->choose = -1;
+	while(ngh != NULL){
+		int num = ngh -> v;
+		edge* e = ngh -> e;
+		e -> choose = -1;
 		//printf("%d e1:%d e2:%d\n", num, e -> e1 -> v, e -> e2 -> v);
-		neighbor* other = e->e1;
-		if (e->e2->v == n)
-			other = e->e2;
-		if (other->pre == NULL) {
-			//printf("other next: %d\n", other -> v);
-			g->nodeList[num].nghList = other->next;
+		neighbor* other = e -> e1;
+		if(e -> e2 -> v == n)
+			other = e -> e2;
+		if(other -> pre == NULL){
+	        //printf("other next: %d\n", other -> v);
+			g -> nodeList[num].nghList = other -> next;
 
-			if (other->next != NULL) {
-				other->next->pre = other->pre;
+			if(other -> next != NULL){
+				other -> next -> pre = other -> pre;
 			}
 
-		}
-		else {
-			other->pre->next = other->next;
-			if (other->next != NULL) {
-				other->next->pre = other->pre;
+		} else {
+			other -> pre -> next = other -> next;
+			if(other -> next != NULL){
+				other -> next -> pre = other -> pre;
 			}
 		}
-
-		ngh = ngh->next;
-	}
-
-	g->nodeList[n].choose = -1;
-
-
-
-	free(g->nodeList[n].nghList);
-	g->nodeList[n].nghList = NULL;
-
-	for (int i = 0; i < g->E; i++) {
-		while (g->edges[i]->choose == -1) {
-			if (i == g->E - 1) {
-				g->E--;
-				break;
-			}
-			//printf("%d, %d, - e1:%d e2:%d\n", i, g -> E, g -> edges[i] -> e1 -> v, g -> edges[i] -> e2 -> v);
-			g->edges[i] = g->edges[--(g->E)];
-		}
-	}
-
-}
-
-// delete the specify node and all the edges connected with this node. (also will delete the specified node in the adjacency list)
-
-//do optimization by reducing some nodes with degree 1 and 2
-void replace_edge(graph * g, int v1, int v2, int w, edge * e1, edge * e2) {
-	int eIndex = g->cur_e_num;
-	neighbor * cur, *beg;
-
-		//check whether there is an edge between v1 and v2
-		int exist_edge = 0;
-		if (g->nodeList[v1].d <= g->nodeList[v2].d) {
-		beg = g->nodeList[v1].nghList;
-		cur = beg->next;
-		while (cur!= NULL && cur->v != beg->v) { 
-			if (cur->v == v2) { exist_edge = 1; break; };
-			cur = cur->next;
-		}
-	}
-	else {
-		beg = g->nodeList[v2].nghList;
-		cur = beg->next;
-		while (cur != NULL && cur->v != beg->v) {
-			if (cur->v == v1) { exist_edge = 1; break; }
-			cur = cur->next;
-		}
-
-	}
-
-	//check whether the edge between v1 and v2 has smaller weight
-	if (exist_edge && cur->e->w <= w) return;	
-
-
-	if (exist_edge) {
-		//free memory !!
-		//free(cur);
-		cur->e->choose = -1;
 		
-		//delete edge from v1 and v2 's neighbour list
-
+		ngh = ngh -> next;
 	}
 
-	// add the edge to the graph
-	add(g, eIndex, v1, v2, w);
-	g->cur_v_num++;
-	g->cur_e_num--;
+	g -> nodeList[n].choose = -1;
 
-	//store the information of deleted edgee
-	//chr_edges * chr = (chr_edges *)malloc(sizeof(chr_edges));
-	//g->edges[eIndex]->chr = chr;
-	//chr->edge_list;
+    free(g -> nodeList[n].nghList);
+	g -> nodeList[n].nghList = NULL;
 
-
-	// add the edge to the adjancency list of the two vertex
-	g->edges[eIndex]->e1 = addEdge(g, eIndex, v1, v2);
-	g->edges[eIndex]->e2 = addEdge(g, eIndex, v2, v1);
+	for (int i = 0; i < g -> E; i++){
+        while(g -> edges[i] -> choose == -1){
+        	if(i == g -> E - 1){
+        		g -> E --;
+        		break;
+        	}
+        	//printf("%d, %d, - e1:%d e2:%d\n", i, g -> E, g -> edges[i] -> e1 -> v, g -> edges[i] -> e2 -> v);
+        	g -> edges[i] = g -> edges[--(g -> E)];
+        }
+    }
 
 }
-
-void reduce(graph * g) {
-	//d1
-	int * queue_d1 = malloc((g->V + 10) * sizeof(int));
-	int * queue_d2 = malloc((g->V + 10) * sizeof(int));
-	int beg1 = 0, end1 = 0, beg2 = 0, end2 = 0;
-
-
-	//add all nodes with degree 1 and 2 into the queue
-	for (int i = 1; i <= g->V; i++) {
-		if (g->nodeList[i].d == 1)	queue_d1[end1++] = i;
-		else if (g->nodeList[i].d == 2) queue_d2[end2++] = i;
-	}
-
-
-	//deal with nodes with degree 1 and degree 2 one by one
-	int exit_flag = 0;
-
-	// for degree 1
-	int cur, ngh;
-
-	// for degree 2
-	int ngh1, ngh2, w1, w2; 
-	edge * e1 = NULL, *e2 = NULL;
-
-	while (!exit_flag) {
-		//initialize exit_flag = 1, if any new nodes with d=1 or d=2, set exit_flag = 0
-		exit_flag = 1;			 
-
-		//============degree = 1==============
-		//get the current node in queue1 and it's neighbour 
-		cur = queue_d1[beg1++];
-		ngh = g->nodeList[cur].nghList->v;
-
-		// choose terminal, deleter non-terminal
-		if (g->nodeList[cur].isTerminal) {
-			g->nodeList[cur].choose = 1;  
-			g->nodeList[cur].nghList->e->choose = 1;
-			g->nodeList[ngh].isTerminal = 1; // make it's neighbour be terminal as it's neighbour must be in the solution
-
-			//deduce it's neighbour degree by one
-			g->nodeList[ngh].d--; 
-		}
-		else
-			deleteNode(g, cur);
-
-		// if it's neighbour with degree 1 or 2, add it into the queue
-		if (g->nodeList[ngh].d == 1) { queue_d1[end1++] = ngh; exit_flag = 0; }
-		else if (g->nodeList[ngh].d == 2) { queue_d2[end2++] = ngh; exit_flag = 0; }
-
-		if (!exit_flag) continue;  // deal with d = 1 nodes until all the nodes have d >= 2
-
-		//=================degree = 2==============
-		
-		while (beg2 < end2) {
-			cur = queue_d2[beg2++];
-			ngh1 = g->nodeList[cur].nghList->v;
-			ngh2 = g->nodeList[cur].nghList->next->v;
-			e1 = g->nodeList[cur].nghList->e;
-			e2 = g->nodeList[cur].nghList->next->e;
-			int w1 = e1->w;
-			int w2 = e2->w;
-
-
-			if (g->nodeList[cur].isTerminal) {
-				if (w1 <= w2 && g->nodeList[ngh1].isTerminal) {
-					g->nodeList[cur].choose = 1;
-					e1->choose = 1;
-					e2->choose = -1;
-				}
-				else if (w2 <= w1 && g->nodeList[ngh2].isTerminal) {
-					g->nodeList[cur].choose = 1;
-					e2->choose = 1;
-					e1->choose = -1;
-				}
-			}
-
-			else {
-				g->nodeList[cur].choose = -1;
-				g->nodeList[ngh1].nghList->e->choose = -1;
-				g->nodeList[ngh2].nghList->e->choose = -1;
-				replace_edge(g, ngh1, ngh2, w1 + w2, e1, e2);
-			}
-
-			if (g->nodeList[ngh1].d == 1) { queue_d1[end1++] = ngh1; exit_flag = 0; }
-			else if (g->nodeList[ngh1].d == 2) { queue_d2[end2++] = ngh1; exit_flag = 0; }
-
-			if (g->nodeList[ngh2].d == 1) { queue_d1[end1++] = ngh2; exit_flag = 0; }
-			else if (g->nodeList[ngh2].d == 2) { queue_d2[end2++] = ngh2; exit_flag = 0; }
-
-		}
-
-	}
-	
-}
-
-
-
-// delete the specify node and all the edges connected with this node. (also will delete the specified node in the adjacency list)
-
-
-
-
-
-
-
-
 void freePath(pathNode* pn2) {
 	pathNode* pn1;
 
@@ -411,42 +243,43 @@ void reduceEdge(graph * g){
 
 
 
-void readInput(graph *g) {
-	int v, e, t, v1, v2, w, tt;
+void readInput(graph *g){
+	int v,e,t,v1,v2,w,tt;
 
 	// read the vertices and edges
 	scanf("SECTION Graph\nNodes %d\nEdges %d\n", &v, &e);
-	g->V = v;
-	g->cur_v_num = v;
-	g->E = e;
-	g->cur_e_num = e;
-	g->edges = (edge**)malloc(e * sizeof(edge*));
-	g->nodeList = (node*)malloc((v + 1) * sizeof(node));
-	for (int i = 1; i <= v; i++) {
-		g->nodeList[i].d = 0;
-		g->nodeList[i].choose = 0;
-		g->nodeList[i].isTerminal = 0;
-		g->nodeList[i].nghList = NULL;
+	g -> V = v;
+	g -> E = e;
+	g -> edges = (edge**)malloc(e * sizeof(edge*));
+	g -> nodeList = (node*)malloc((v+1) * sizeof(node));
+	for (int i=1; i<=v; i++) {
+		g -> nodeList[i].d = 0;
+		g -> nodeList[i].choose = 0;
+		g -> nodeList[i].isTerminal = 0;
+		g -> nodeList[i].nghList = NULL;
 	}
+	
 
-	for (int i = 0; i < e; i++) {
+	for(int i = 0; i < e; i++){
 		scanf("E %d %d %d\n", &v1, &v2, &w);
 		add(g, i, v1, v2, w);
 
 	}
+	
 
 	// read the terminals
 	scanf("END\nSECTION Terminals\nTerminals %d\n", &t);
-	g->T = t;
-	g->t = (int*)malloc(t * sizeof(int));
+	g -> T = t;
+	g -> t = (int*) malloc(t * sizeof(int));
 
-	for (int i = 0; i < t; i++) {
+	for(int i = 0; i < t; i++){
 		scanf("T %d\n", &tt);
-		g->nodeList[tt].isTerminal = 1;
-		g->t[i] = tt;
+		g -> nodeList[tt].isTerminal = 1;
+		g -> t[i] = tt;
 	}
 
-	reduce(g);
+	reduceEdge(g);
+
 
 }
 
@@ -491,6 +324,9 @@ int getFather(graph *g, int nodeIndex) {
 }
 
 
+
+
+
 void swap(graph *g, heapNode* n1, heapNode* n2){
 	heapNode temp = *n1;
 	*n1 = *n2;
@@ -521,11 +357,11 @@ void heapify(graph *g, heapNode *heap, int i, int size){
 	heapNode e = heap[i];
 	heapNode e1 = heap[2*i+1];
 	heapNode e2;
-	e2.v = -1; e2.d = LLONG_MAX;
+	e2.v = -1; e2.d = INT_MAX;
 	if (2 * i + 2 < size){
 		e2 = heap[2*i+2];
 	}
-	int min = e1.d <= e2.d ? 2*i+1 : 2*i+2;
+	int min = e1.d < e2.d ? 2*i+1 : 2*i+2;
 	if (e.d > heap[min].d){
 		swap(g, &heap[min], &heap[i]);
 		heapify(g, heap, min, size);
@@ -568,26 +404,25 @@ void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 	for(i = 1; i < size; i ++){
 		goup(g, heap, i);
 	}
-//printf("hehe start\n");
+
 	while (size){
 		int v_min = heap[0].v;
 		long long d = heap[0].d;
 		neighbor* ptr = g -> nodeList[v_min].nghList;
 		swap(g, &heap[0], &heap[--size]);
 		heapify(g, heap, 0, size);
-//printf("%d %lld fjdsfjdklsfjslfjsl\n",v_min,d);
+
 		while(ptr != NULL){
 
 			int u = ptr -> v;
-			if((!g -> nodeList[u].needOp) ){	////////////////////////////////////////////
+			if((!g -> nodeList[u].needOp)  || (g->nodeList[u].heapPos>=size)){	////////////////////////////////////////////
 				ptr = ptr -> next;
 				continue;
 			}
 			int w = ptr -> e -> w;
 			int index = g -> nodeList[u].heapPos;
 			if (heap[index].d > w + d ){
-//if (g->nodeList[u].heapPos>=size)
-//printf("%d %d %lld//////////////////////////////////////////////////\n",g->nodeList[u].heapPos, size, d);
+				
 				g -> nodeList[u].prevEdge = ptr->e;
 				//printf("(%d, %d) ", g -> nodeList[u].prevEdge->v1, g -> nodeList[u].prevEdge->v2);
 				heap[index].d = w + d;
@@ -599,8 +434,6 @@ void dijkstra(graph *g, int source, long long **dist, pathNode ***path){
 		//dprintf("\n");
 	}
 	
-
-	// printf("another ting\n");
 	
 	
 	for(i = 0; i < originalSize; i++){
@@ -807,6 +640,10 @@ void greedy1(graph* g) {
 		for (int i=0; i<g->T; i++) {
 			for (int j=i+1; j<g->T; j++) {
 				if ((dist[g->t[i]][g->t[j]]!=0) && (dist[g->t[i]][g->t[j]]<tempMin)) {
+					if (g->t[i]==24&&g->t[j]==32) {
+						printf("%lld\n",dist[g->t[i]][g->t[j]]);
+						debug("oh fuck");
+					}
 					tempT1 = g->t[i];
 					tempT2 = g->t[j];
 					tempMin	= dist[tempT1][tempT2];
@@ -849,7 +686,11 @@ void greedy1(graph* g) {
 			}
 		}
 		//floyed(g, dist ,path);
+
+printf("%d %d**\n", tempT1, tempT2);
 		doDijkstra(g, dist, path);
+printf("%d %d&&\n", tempT1, tempT2);
+
 		
 	}
 	freeDistAndPath();
@@ -870,9 +711,8 @@ int main(){
 	readInput(g);
 	//dijkstra(g, 4);
 	//report(g);
-	
 
-	
+
 	if (g->V<10000) {
 		greedy1(g);
 	} else {
